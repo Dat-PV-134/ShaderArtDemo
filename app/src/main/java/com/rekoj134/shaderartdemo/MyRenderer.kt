@@ -34,6 +34,9 @@ class MyRenderer(private val context: Context) : Renderer {
     private var VAO = 0
     private var EBO = 0
 
+    private var timeElapsed: Float = 0.0f
+    private var animationSpeed: Float = 1.0f
+
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         val vertexShaderSource = ShaderReader.readTextFileFromResource(context, R.raw.vertex_shader)
         val fragmentShaderSource = ShaderReader.readTextFileFromResource(context, R.raw.fragment_shader)
@@ -80,13 +83,31 @@ class MyRenderer(private val context: Context) : Renderer {
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+        // set iResolution value
+        GLES32.glUniform3f(0, width.toFloat(), height.toFloat(), 1.0f)
+
         glViewport(0, 0, width, height)
     }
 
     override fun onDrawFrame(gl: GL10?) {
+        timeElapsed += animationSpeed * 0.016f // 60 FPS
+        if (timeElapsed > 1000000000.0f) {
+            timeElapsed /= 1000000000.0f
+        }
+        // set iTime value
+        GLES32.glUniform1f(1, timeElapsed)
+
         glClear(GL_COLOR_BUFFER_BIT)
         GLES32.glBindVertexArray(VAO)
         GLES32.glDrawElements(GLES32.GL_TRIANGLES, indices.size, GLES32.GL_UNSIGNED_INT, 0)
         GLES32.glBindVertexArray(0)
+    }
+
+    fun handleTouchPress(normalizeX: Float, normalizeY: Float) {
+        GLES32.glUniform3f(2, normalizeX, normalizeY, 1.0f)
+    }
+
+    fun handleTouchDrag(normalizeX: Float, normalizeY: Float) {
+        GLES32.glUniform3f(2, normalizeX, normalizeY, 1.0f)
     }
 }

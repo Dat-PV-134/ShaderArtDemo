@@ -1,7 +1,9 @@
 package com.rekoj134.shaderartdemo
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -25,15 +27,31 @@ class MainActivity : AppCompatActivity() {
         initOpenGLES()
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun initOpenGLES() {
         val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
         val configurationInfo = activityManager.deviceConfigurationInfo
         val supportsEs32 = configurationInfo.reqGlEsVersion >= 0x30002
 
         if (supportsEs32) {
+            val myRenderer = MyRenderer(this@MainActivity)
             binding.myGLSurfaceView.setEGLContextClientVersion(3)
-            binding.myGLSurfaceView.setRenderer(MyRenderer(this@MainActivity))
+            binding.myGLSurfaceView.setRenderer(myRenderer)
             rendererSet = true
+
+            binding.myGLSurfaceView.setOnTouchListener { v, event ->
+                event?.let {
+                    val normalizeX = (event.x / v.width) * 2 - 1
+                    val normalizeY = -((event.y / v.height) * 2 - 1)
+                    if (it.action == MotionEvent.ACTION_DOWN) {
+                        binding.myGLSurfaceView.queueEvent { myRenderer.handleTouchPress(normalizeX, normalizeY) }
+                    } else if (it.action == MotionEvent.ACTION_MOVE) {
+                        binding.myGLSurfaceView.queueEvent { myRenderer.handleTouchDrag(normalizeX, normalizeY) }
+                    }
+                    true
+                }
+                true
+            }
         } else {
             Toast.makeText(this@MainActivity, "This device doesn't support OpenGL ES 3.2", Toast.LENGTH_SHORT).show()
             return
